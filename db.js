@@ -9,4 +9,18 @@ let db = mysql.createConnection({
     database: process.env.DB_NAME,
 })
 
-module.exports = db
+let asyncDB = db.promise()
+
+async function getUsers(){
+    try{
+        let[rows, fields] = await asyncDB.query("select * from user")
+        return rows
+    }catch(err){
+        throw err.message
+    }
+}
+
+
+module.exports = {
+    getUsers
+}

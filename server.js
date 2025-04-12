@@ -55,3 +55,5 @@ io.on("connection", function(s){
 //         console.log(result)
 //     }
 // })
+
+db.getUsers().then(res=>console.log(res)).catch(err=>console.log(err))
