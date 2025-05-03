@@ -4,6 +4,7 @@ let http = require("http")
 let path = require("path")
 let fs = require("fs")
 let {Server} = require("socket.io")
+let bcrypt  = require("bcrypt")
 
 let pathToIndex = path.join(__dirname, "static", "index.html")
 let index = fs.readFileSync(pathToIndex, "utf-8")
@@ -16,6 +17,9 @@ let script = fs.readFileSync(pathToScript, "utf-8")
 
 let pathToRegister = path.join(__dirname, "static", "register.html")
 let register = fs.readFileSync(pathToRegister, "utf-8")
+
+let pathToLogin = path.join(__dirname, "static", "login.html")
+let loginPage = fs.readFileSync(pathToLogin, "utf-8")
 
 let pathToAuth = path.join(__dirname, "static", "auth.js")
 let auth = fs.readFileSync(pathToAuth, "utf-8")
@@ -34,6 +38,10 @@ let ser = http.createServer((req, res) => {
         res.writeHead(200, {"content-type": "text/html"})
         res.end(register)
         break;
+    case"/login":
+        res.writeHead(200, {"content-type": "text/html"})
+        res.end(loginPage)
+        break;
     case"/script.js":
         res.writeHead(200, {"content-type": "text/js"})
         res.end(script)
@@ -42,6 +50,24 @@ let ser = http.createServer((req, res) => {
         res.writeHead(200, {"content-type": "text/js"})
         res.end(auth)
         break;
+        case "/api/register":
+            let data = ""
+            req.on("data", (chunk) => data += chunk)
+            req.on("end", async ()=>{
+                data = JSON.parse(data)
+                console.log(data)
+                let hash = await bcrypt.hash(data.password, 10)
+                console.log(hash)
+                console.log(await bcrypt.compare(data.password, hash))
+                if(await db.checkExists(data.login).catch(err=>console.log(err))){
+                    res.end("User exist")
+                    return
+                }
+                await db.addUser(data.login, hash).catch(err=>console.log(err))
+                res.writeHead(302, {"location": "/login"});
+                res.end(JSON.stringify({status: "ok"}));
+            });
+        break;      
     default:
         res.writeHead(404, {"content-type": "text/html"})
         res.end("<h1>404 not found</h1>")
