@@ -35,6 +35,14 @@ async function checkExists(login){
         throw err.message
     }
 }
+async function     getUser(login){
+    try{
+        let[rows, fields] = await asyncDB.query("SELECT * from user WHERE login = ?", [login])
+        return rows
+    }catch(err){
+        throw err.message
+    }
+}
 
 async function getMessages() {
     try {
@@ -61,5 +69,6 @@ module.exports = {
     getMessages,
     addMessage,
     addUser,
-    checkExists
+    checkExists,
+    getUser
 };

@@ -5,6 +5,7 @@ let path = require("path")
 let fs = require("fs")
 let {Server} = require("socket.io")
 let bcrypt  = require("bcrypt")
+let jwt = require("jsonwebtoken")
 
 let pathToIndex = path.join(__dirname, "static", "index.html")
 let index = fs.readFileSync(pathToIndex, "utf-8")
@@ -64,8 +65,26 @@ let ser = http.createServer((req, res) => {
                     return
                 }
                 await db.addUser(data.login, hash).catch(err=>console.log(err))
-                res.writeHead(302, {"location": "/login"});
+               
                 res.end(JSON.stringify({status: "ok"}));
+            });
+        break;      
+        case "/api/login":
+            let data1 = ""
+            req.on("data", (chunk) => data1 += chunk)
+            req.on("end", async ()=>{
+                let{login, password} = JSON.parse(data1);
+                let info = await db.getUser(login)
+                if(info.length == 0){
+                    res.end(JSON.stringify({status: "неправильно введені данні"}));
+                    return
+                }
+                if(await bcrypt.compare(password, info[0].password)){
+                    let token = jwt.sign({login, id: info[0].id}, "Nikta", {expiresIn: "1h"})
+                    res.end(JSON.stringify({status: "ok", token}));
+                }else{
+                    res.end(JSON.stringify({status: "неправильно введені данні"}));
+                }
             });
         break;      
     default:
