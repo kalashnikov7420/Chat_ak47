@@ -28,6 +28,7 @@ let auth = fs.readFileSync(pathToAuth, "utf-8")
 let ser = http.createServer((req, res) => {
    switch(req.url){
     case"/":
+    if(!guarded(req, res))return
         res.writeHead(200, {"content-type": "text/html"})
         res.end(index)
         break;
@@ -81,7 +82,7 @@ let ser = http.createServer((req, res) => {
                 }
                 if(await bcrypt.compare(password, info[0].password)){
                     let token = jwt.sign({login, id: info[0].id}, "Nikta", {expiresIn: "1h"})
-                    res.end(JSON.stringify({status: "ok", token}));
+                    res.end(JSON.stringify({status: "ok", token, login: info[0].login, id: info[0].id}));
                 }else{
                     res.end(JSON.stringify({status: "неправильно введені данні"}));
                 }
@@ -104,12 +105,30 @@ io.on("connection", async function(s){
     io.emit("update", JSON.stringify(messages))
     s.on("message",async (data)=>{
         data = JSON.parse(data)
-       await db.addMessage(data.text, 2)
+       await db.addMessage(data.text, data.name)
        let messages = await db.getMessages()
        messages = messages.map(n=>({name: n.login, text: n.content}))
        io.emit("update", JSON.stringify(messages))
     })
 })
+
+function guarded(req, res){
+    if(req.headers.cookie == undefined ){
+        res.writeHead(302, {"Location": "/register"})
+        res.end();
+        return
+    }
+    let cookies = req.headers.cookie.split("; ")
+    let token = cookies.find(el=>el.startsWith("token")).split("=")[1]
+    let decode = jwt.decode(token, "Nikta")
+    if(!decode){
+        res.writeHead(302, {"Location": "/register"})
+        res.end();
+        return
+    }else{
+        return decode
+    }
+}
 
 // console.log(process.env.HOST)
 
