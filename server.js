@@ -78,7 +78,7 @@ let ser = http.createServer((req, res) => {
                 let info = await db.getUser(login)
                 if(info.length == 0){
                     res.end(JSON.stringify({status: "неправильно введені данні"}));
-                    return
+                 return
                 }
                 if(await bcrypt.compare(password, info[0].password)){
                     let token = jwt.sign({login, id: info[0].id}, "Nikta", {expiresIn: "1h"})
